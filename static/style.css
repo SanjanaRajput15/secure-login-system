@@ -1,0 +1,26 @@
+body {
+    font-family: Arial, sans-serif;
+    background: #f5f7fa;
+    margin: 0;
+    padding: 40px;
+  }
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 20px 30px;
+    border-radius: 8px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  }
+  label { display:block; margin-top:12px; }
+  input, select { width:100%; padding:8px; margin-top:6px; border-radius:4px; border:1px solid #ddd; }
+  button { margin-top:14px; padding:10px 14px; border:none; border-radius:6px; background:#2563eb; color:#fff; cursor:pointer; }
+  button:hover { opacity:0.95; }
+  table { width:100%; border-collapse: collapse; margin-top:14px; }
+  thead th { text-align:left; padding:8px; background:#f2f5fb; }
+  tbody td { padding:8px; border-bottom:1px solid #eee; }
+  .flashes { list-style:none; padding:0; }
+  .flashes li { margin-bottom:8px; padding:8px; border-radius:6px; }
+  .flashes li.error { background:#fee2e2; color:#9b1c1c; }
+  .flashes li.success { background:#ecfdf5; color:#064e3b; }
+  

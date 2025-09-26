@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Register</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  {% if recaptcha_site_key %}
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+  {% endif %}
+</head>
+<body>
+  <div class="container">
+    <h2>Register</h2>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+          {% for category, msg in messages %}
+            <li class="{{category}}">{{ msg }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+    <form method="POST" onsubmit="return validateForm()">
+      <label>Username</label>
+      <input name="username" required minlength="2">
+      <label>Email</label>
+      <input name="email" type="email" required>
+      <label>Password</label>
+      <input name="password" type="password" required>
+      <label>Role</label>
+      <select name="role">
+        <option>User</option>
+        <option>Admin</option>
+      </select>
+      {% if recaptcha_site_key %}
+      <div class="g-recaptcha" data-sitekey="{{ recaptcha_site_key }}"></div>
+      {% endif %}
+      <button type="submit">Register</button>
+    </form>
+    <p><a href="{{ url_for('login') }}">Already registered? Login</a></p>
+  </div>
+
+<script>
+function validateForm() {
+  const pw = document.querySelector('input[name="password"]').value;
+  const strong = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+  if (!strong.test(pw)) {
+    alert("Password must be at least 8 chars and include letters, numbers and special characters.");
+    return false;
+  }
+  return true;
+}
+</script>
+</body>
+</html>
