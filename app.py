@@ -1,8 +1,8 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash , check_password_hash
 from flask_pymongo import PyMongo
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import (
-    JWTManager, create_access_token, jwt_required, get_jwt_identity , check_password_hash
+    JWTManager, create_access_token, jwt_required, get_jwt_identity
 )
 from datetime import datetime, timedelta
 import re
