@@ -11,6 +11,7 @@ import requests
 import os
 from bson.objectid import ObjectId
 from email_validator import validate_email, EmailNotValidError
+from flask_jwt_extended import jwt_required, get_jwt_identity, verify_jwt_in_request
 
 # Init app
 app = Flask(__name__)
@@ -127,42 +128,26 @@ def register():
     flash("Registered successfully. Please login.", "success")
     return redirect(url_for("login"))
 
-@app.route("/login", methods=["GET", "POST"])
+@app.route('/login', methods=['POST'])
 def login():
-    if request.method == "GET":
-        return render_template("login.html", recaptcha_site_key=config.RECAPTCHA_SITE_KEY)
-    data = request.form
-    email = data.get("email", "").strip().lower()
-    password = data.get("password", "")
-    recaptcha_token = data.get("g-recaptcha-response", "")
+    email = request.json.get("email")
+    password = request.json.get("password")
 
-    if not verify_recaptcha(recaptcha_token):
-        flash("reCAPTCHA verification failed. Try again.", "error")
-        return redirect(url_for("login"))
+    user = User.objects(email=email).first()
 
-    user = USERS.find_one({"email": email})
-    if not user:
-        flash("Invalid credentials", "error")
-        return redirect(url_for("login"))
+    if not user or not user.check_password(password):
+        return jsonify({"msg": "Invalid credentials"}), 401
 
-    if user_locked(user):
-        flash("Account temporarily locked due to multiple failed attempts. Try later.", "error")
-        return redirect(url_for("login"))
+    # Create JWT token
+    access_token = create_access_token(identity={"id": str(user.id), "email": user.email, "role": user.role})
 
-    if not bcrypt.check_password_hash(user["password"], password):
-        increment_failed_login(email)
-        flash("Invalid credentials", "error")
-        return redirect(url_for("login"))
-
-    # success
-    reset_failed_login(email)
-    identity = {"id": str(user["_id"]), "email": user["email"], "role": user.get("role", "User")}
-    access_token = create_access_token(identity=identity)
-    # For simplicity, we'll pass token via query param to dashboard (not recommended for prod).
-    flash("Login successful", "success")
-    if identity["role"] == "Admin":
-        return redirect(url_for("admin_dashboard", token=access_token))
-    return redirect(url_for("user_dashboard", token=access_token))
+    # Return both token and ready-to-use URL
+    return jsonify({
+        "msg": "Login successful",
+        "token": access_token,
+        "user_url_jwt": f"http://127.0.0.1:5000/user?jwt={access_token}",
+        "user_url_token": f"http://127.0.0.1:5000/user?token={access_token}"
+    }), 200
 
 @app.route("/admin")
 @jwt_required(locations=["query_string"])
@@ -179,17 +164,27 @@ def admin_dashboard():
             u["created_at"] = u["created_at"].isoformat()
     return render_template("admin.html", users=users, current=current)
 
-@app.route("/user")
-@jwt_required(locations=["query_string"])
-def user_dashboard():
-    current = get_jwt_identity()
-    if not current:
-        return "Forbidden", 403
-    user = USERS.find_one({"_id": ObjectId(current["id"])}, {"password": 0})
-    if user:
-        user["_id"] = str(user["_id"])
-        user["created_at"] = user["created_at"].isoformat() if user.get("created_at") else None
-    return render_template("user.html", user=user, current=current)
+@app.route('/user', methods=['GET'])
+def get_user():
+    # 1. First check if token is in query params
+    token = request.args.get('jwt') or request.args.get('token')
+
+    if token:
+        try:
+            # Manually verify JWT if passed via query string
+            verify_jwt_in_request(optional=True)
+            user_identity = get_jwt_identity()
+            return jsonify(user_identity), 200
+        except Exception as e:
+            return jsonify({"msg": f"Invalid token: {str(e)}"}), 401
+
+    # 2. If no query param, check Authorization header
+    try:
+        verify_jwt_in_request()
+        user_identity = get_jwt_identity()
+        return jsonify(user_identity), 200
+    except Exception as e:
+        return jsonify({"msg": "Missing or invalid token", "error": str(e)}), 401
 
 @app.route("/admin/delete/<user_id>", methods=["POST"])
 @jwt_required(locations=["query_string"])
