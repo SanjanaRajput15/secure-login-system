@@ -20,16 +20,20 @@
         </ul>
       {% endif %}
     {% endwith %}
-    <form method="POST">
+    <form action="{{ url_for('login') }}" method="POST">
       <label>Email</label>
       <input name="email" type="email" required>
+      
       <label>Password</label>
       <input name="password" type="password" required>
+      
       {% if recaptcha_site_key %}
       <div class="g-recaptcha" data-sitekey="{{ recaptcha_site_key }}"></div>
       {% endif %}
+      
       <button type="submit">Login</button>
     </form>
+    
     <p><a href="{{ url_for('register') }}">Register</a></p>
   </div>
 </body>
