@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash , check_password_hash
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash 
 from flask_pymongo import PyMongo
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import (
