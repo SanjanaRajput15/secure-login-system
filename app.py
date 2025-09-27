@@ -1,18 +1,23 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_pymongo import PyMongo
 from flask_bcrypt import Bcrypt
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, verify_jwt_in_request
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from datetime import datetime, timedelta
 from bson.objectid import ObjectId
 import re
-import json
 import config
 
 # ---- Init app ----
 app = Flask(__name__)
 app.config["MONGO_URI"] = config.MONGO_URI
-app.config["JWT_SECRET_KEY"] = config.JWT_SECRET_KEY
 app.config["SECRET_KEY"] = config.SECRET_KEY
+app.config["JWT_SECRET_KEY"] = config.JWT_SECRET_KEY
+
+# JWT Cookie settings
+app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
+app.config["JWT_COOKIE_NAME"] = "access_token_cookie"
+app.config["JWT_COOKIE_SECURE"] = False   # True in production with HTTPS
+app.config["JWT_COOKIE_CSRF_PROTECT"] = False  # optional for simplicity
 
 mongo = PyMongo(app)
 bcrypt = Bcrypt(app)
@@ -20,7 +25,7 @@ jwt = JWTManager(app)
 
 USERS = mongo.db.users
 
-# ---- Helpers ----
+# ---- Helper Functions ----
 def is_strong_password(pw: str) -> bool:
     return bool(re.match(r'^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$', pw))
 
@@ -29,7 +34,7 @@ def is_strong_password(pw: str) -> bool:
 def index():
     return render_template("index.html")
 
-@app.route("/register", methods=["GET","POST"])
+@app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "GET":
         return render_template("register.html")
@@ -64,7 +69,7 @@ def register():
     flash("Registered successfully! Please login.", "success")
     return redirect(url_for("login"))
 
-@app.route("/login", methods=["GET","POST"])
+@app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "GET":
         return render_template("login.html")
@@ -74,15 +79,13 @@ def login():
     user = USERS.find_one({"email": email})
 
     if user and bcrypt.check_password_hash(user["password"], password):
-        # Store identity as JSON string
-        identity = json.dumps({
+        access_token = create_access_token(identity={
             "id": str(user["_id"]),
             "username": user["username"],
             "email": user["email"],
             "role": user["role"]
-        })
-        access_token = create_access_token(identity=identity, expires_delta=timedelta(hours=1))
-        
+        }, expires_delta=timedelta(hours=1))
+
         resp = redirect(url_for("dashboard"))
         resp.set_cookie("access_token_cookie", access_token, httponly=True, samesite='Lax')
         flash("Login successful!", "success")
@@ -92,18 +95,21 @@ def login():
         return redirect(url_for("login"))
 
 @app.route("/dashboard")
-@jwt_required(locations=["cookies"])
+@jwt_required()
 def dashboard():
-    # Parse JSON identity
-    user = json.loads(get_jwt_identity())
+    user = get_jwt_identity()
+    if not user:
+        return redirect(url_for("login"))
+
     if user["role"] == "Admin":
         return redirect(url_for("admin_dashboard"))
+
     return render_template("dashboard.html", username=user["username"], role=user["role"])
 
 @app.route("/admin")
-@jwt_required(locations=["cookies"])
+@jwt_required()
 def admin_dashboard():
-    user = json.loads(get_jwt_identity())
+    user = get_jwt_identity()
     if user["role"] != "Admin":
         return "Forbidden", 403
 
@@ -115,9 +121,9 @@ def admin_dashboard():
     return render_template("admin.html", users=users, current=user)
 
 @app.route("/admin/delete/<user_id>", methods=["POST"])
-@jwt_required(locations=["cookies"])
+@jwt_required()
 def admin_delete_user(user_id):
-    user = json.loads(get_jwt_identity())
+    user = get_jwt_identity()
     if user["role"] != "Admin":
         return "Forbidden", 403
     if user_id == user["id"]:
