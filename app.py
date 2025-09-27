@@ -10,14 +10,14 @@ import config
 # ---- Init app ----
 app = Flask(__name__)
 app.config["MONGO_URI"] = config.MONGO_URI
-app.config["SECRET_KEY"] = config.SECRET_KEY
 app.config["JWT_SECRET_KEY"] = config.JWT_SECRET_KEY
+app.config["SECRET_KEY"] = config.SECRET_KEY
 
-# JWT Cookie settings
+# JWT Cookie configuration
 app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
 app.config["JWT_COOKIE_NAME"] = "access_token_cookie"
-app.config["JWT_COOKIE_SECURE"] = False   # True in production with HTTPS
-app.config["JWT_COOKIE_CSRF_PROTECT"] = False  # optional for simplicity
+app.config["JWT_COOKIE_SECURE"] = False  # True if HTTPS
+app.config["JWT_COOKIE_CSRF_PROTECT"] = False
 
 mongo = PyMongo(app)
 bcrypt = Bcrypt(app)
@@ -25,7 +25,7 @@ jwt = JWTManager(app)
 
 USERS = mongo.db.users
 
-# ---- Helper Functions ----
+# ---- Helpers ----
 def is_strong_password(pw: str) -> bool:
     return bool(re.match(r'^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$', pw))
 
@@ -34,7 +34,7 @@ def is_strong_password(pw: str) -> bool:
 def index():
     return render_template("index.html")
 
-@app.route("/register", methods=["GET", "POST"])
+@app.route("/register", methods=["GET","POST"])
 def register():
     if request.method == "GET":
         return render_template("register.html")
@@ -69,7 +69,7 @@ def register():
     flash("Registered successfully! Please login.", "success")
     return redirect(url_for("login"))
 
-@app.route("/login", methods=["GET", "POST"])
+@app.route("/login", methods=["GET","POST"])
 def login():
     if request.method == "GET":
         return render_template("login.html")
@@ -85,9 +85,14 @@ def login():
             "email": user["email"],
             "role": user["role"]
         }, expires_delta=timedelta(hours=1))
-
+        
         resp = redirect(url_for("dashboard"))
-        resp.set_cookie("access_token_cookie", access_token, httponly=True, samesite='Lax')
+        resp.set_cookie(
+            "access_token_cookie",
+            access_token,
+            httponly=True,
+            samesite='Lax'
+        )
         flash("Login successful!", "success")
         return resp
     else:
@@ -95,7 +100,7 @@ def login():
         return redirect(url_for("login"))
 
 @app.route("/dashboard")
-@jwt_required()
+@jwt_required(locations=["cookies"])
 def dashboard():
     user = get_jwt_identity()
     if not user:
@@ -104,10 +109,10 @@ def dashboard():
     if user["role"] == "Admin":
         return redirect(url_for("admin_dashboard"))
 
-    return render_template("dashboard.html", username=user["username"], role=user["role"])
+    return render_template('dashboard.html', username=user["username"], role=user["role"])
 
 @app.route("/admin")
-@jwt_required()
+@jwt_required(locations=["cookies"])
 def admin_dashboard():
     user = get_jwt_identity()
     if user["role"] != "Admin":
@@ -121,7 +126,7 @@ def admin_dashboard():
     return render_template("admin.html", users=users, current=user)
 
 @app.route("/admin/delete/<user_id>", methods=["POST"])
-@jwt_required()
+@jwt_required(locations=["cookies"])
 def admin_delete_user(user_id):
     user = get_jwt_identity()
     if user["role"] != "Admin":
