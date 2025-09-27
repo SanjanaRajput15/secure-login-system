@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, f
 from flask_pymongo import PyMongo
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import (
-    JWTManager, create_access_token, jwt_required, get_jwt_identity
+    JWTManager, create_access_token, jwt_required, get_jwt_identity , check_password_hash
 )
 from datetime import datetime, timedelta
 import re
@@ -10,7 +10,7 @@ import config
 import requests
 import os
 from bson.objectid import ObjectId
-from email_validator import validate_email, EmailNotValidError , check_password_hash
+from email_validator import validate_email, EmailNotValidError 
 from flask_jwt_extended import jwt_required, get_jwt_identity, verify_jwt_in_request
 
 # Init app
