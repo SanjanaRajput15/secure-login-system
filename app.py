@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_pymongo import PyMongo
 from flask_bcrypt import Bcrypt
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, set_access_cookies, unset_jwt_cookies
 from datetime import datetime, timedelta
 from bson.objectid import ObjectId
 import re
@@ -12,6 +12,11 @@ app = Flask(__name__)
 app.config["MONGO_URI"] = config.MONGO_URI
 app.config["JWT_SECRET_KEY"] = config.JWT_SECRET_KEY
 app.config["SECRET_KEY"] = config.SECRET_KEY
+
+# Configure JWT to store token in cookie
+app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
+app.config["JWT_ACCESS_COOKIE_NAME"] = "access_token"
+app.config["JWT_COOKIE_CSRF_PROTECT"] = False  # optional for simple setup
 
 mongo = PyMongo(app)
 bcrypt = Bcrypt(app)
@@ -81,7 +86,7 @@ def login():
         }, expires_delta=timedelta(hours=1))
         
         resp = redirect(url_for("dashboard"))
-        resp.set_cookie("access_token", access_token, httponly=True, samesite='Lax')
+        set_access_cookies(resp, access_token)
         flash("Login successful!", "success")
         return resp
     else:
@@ -89,7 +94,7 @@ def login():
         return redirect(url_for("login"))
 
 @app.route("/dashboard")
-@jwt_required(locations=["cookies"])
+@jwt_required()
 def dashboard():
     user = get_jwt_identity()
     if not user:
@@ -98,10 +103,10 @@ def dashboard():
     if user["role"] == "Admin":
         return redirect(url_for("admin_dashboard"))
 
-    return render_template("dashboard.html", username=user["username"])
+    return render_template("dashboard.html", username=user["username"], role=user["role"])
 
 @app.route("/admin")
-@jwt_required(locations=["cookies"])
+@jwt_required()
 def admin_dashboard():
     user = get_jwt_identity()
     if user["role"] != "Admin":
@@ -115,7 +120,7 @@ def admin_dashboard():
     return render_template("admin.html", users=users, current=user)
 
 @app.route("/admin/delete/<user_id>", methods=["POST"])
-@jwt_required(locations=["cookies"])
+@jwt_required()
 def admin_delete_user(user_id):
     user = get_jwt_identity()
     if user["role"] != "Admin":
@@ -131,9 +136,10 @@ def admin_delete_user(user_id):
 @app.route("/logout")
 def logout():
     resp = redirect(url_for("login"))
-    resp.delete_cookie("access_token")
+    unset_jwt_cookies(resp)
     flash("Logged out successfully!", "success")
     return resp
 
+# ---- Run App ----
 if __name__ == "__main__":
     app.run(debug=True)
