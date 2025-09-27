@@ -10,7 +10,7 @@ import config
 import requests
 import os
 from bson.objectid import ObjectId
-from email_validator import validate_email, EmailNotValidError
+from email_validator import validate_email, EmailNotValidError , check_password_hash
 from flask_jwt_extended import jwt_required, get_jwt_identity, verify_jwt_in_request
 
 # Init app
