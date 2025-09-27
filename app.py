@@ -31,6 +31,7 @@ USERS = mongo.db.users
 MAX_FAILED_ATTEMPTS = 5
 LOCKOUT_MINUTES = 15
 
+
 # Helpers
 def is_strong_password(pw: str) -> bool:
     # at least 8 chars, has letter, number and special char
@@ -137,18 +138,27 @@ def login():
         return render_template('login.html')
 
     if request.method == 'POST':
-        email = request.form.get('email')
+        email = request.form.get('email').strip().lower()
         password = request.form.get('password')
 
-        # validate user from DB (example)
-        user = mongo.db.users.find_one({"email": email})
-        if user and check_password_hash(user['password'], password):
-            # login success
+        # Fetch user from MongoDB
+        user = USERS.find_one({"email": email})
+
+        # Check if user exists and password matches
+        if user and bcrypt.check_password_hash(user['password'], password):
+            # Reset failed login attempts
+            reset_failed_login(email)
+
+            # Login success
             flash("Login successful!", "success")
-            return redirect(url_for('dashboard'))  # or wherever
+            return redirect(url_for('dashboard'))  # or wherever you want
+
         else:
+            # Increment failed login attempts
+            increment_failed_login(email)
             flash("Invalid email or password", "danger")
             return redirect(url_for('login'))
+
 
 
 @app.route("/admin")
