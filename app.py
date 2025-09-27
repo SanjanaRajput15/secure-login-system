@@ -10,6 +10,7 @@ import config
 import requests
 from bson.objectid import ObjectId
 from email_validator import validate_email, EmailNotValidError
+from flask import make_response
 
 # Init app
 app = Flask(__name__)
@@ -26,6 +27,19 @@ USERS = mongo.db.users
 # Constants
 MAX_FAILED_ATTEMPTS = 5
 LOCKOUT_MINUTES = 15
+
+if user and bcrypt.check_password_hash(user['password'], password):
+    reset_failed_login(email)
+
+    # Create JWT token
+    access_token = create_access_token(identity={"id": str(user['_id']), "username": user['username'], "role": user['role']})
+
+    # Set token in a cookie
+    resp = make_response(redirect(url_for('dashboard')))
+    resp.set_cookie('access_token', access_token)
+    flash("Login successful!", "success")
+    return resp
+
 
 # Helpers
 def is_strong_password(pw: str) -> bool:
@@ -147,16 +161,14 @@ def login():
         flash("Invalid email or password", "danger")
         return redirect(url_for("login"))
 
-@app.route("/dashboard")
+@app.route('/dashboard')
+@jwt_required(locations=["cookies"])
 def dashboard():
-    try:
-        verify_jwt_in_request(locations=["query_string"])
-        user = get_jwt_identity()
-    except Exception:
+    user = get_jwt_identity()
+    if not user:
         flash("Please login first.", "error")
-        return redirect(url_for("login"))
-
-    return render_template("dashboard.html", username=user.get("username"))
+        return redirect(url_for('login'))
+    return render_template('dashboard.html', username=user.get('username'))
 
 @app.route("/admin")
 def admin_dashboard():
