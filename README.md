@@ -64,4 +64,25 @@ screenshots/login_admin.png//
 screenshots/register.png//
 ## register_admin
 screenshots/register_admin.png//
- 
+
+
+## Testing
+
+Registration with valid and invalid inputs
+Login with correct/incorrect credentials
+Role-based redirection (User/Admin)
+Admin deleting users
+Logout functionality
+
+## Notes
+
+Admin cannot delete their own account.
+Password must be at least 8 characters and include letters, numbers, and special characters.
+JWT sessions expire in 1 hour by default.
+
+## Future Enhancements
+
+Add email verification during registration
+Implement forgot-password functionality 
+Improve UI with modern frontend frameworks 
+Add more robust logging and security features
