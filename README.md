@@ -50,11 +50,11 @@ python app.py
 http://127.0.0.1:5000
 
 ## Screenshots
- Dashboard: screenshots/dashboard.png
- Dashboard_admin:
- Home:
- register:
- register_admin:
- login:
- login_admin:
+Home:screenshots/firstpage_secure_login_system.png//
+dashboard: screenshots/dashboard.png//
+dashboard_admin: screenshots/dashboard_admin.png//
+login: screenshots/login.png//
+login_admin: screenshots/login_admin.png//
+register: screenshots/register.png//
+register_admin: screenshots/register_admin.png//
  
