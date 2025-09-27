@@ -12,6 +12,8 @@ import os
 from bson.objectid import ObjectId
 from email_validator import validate_email, EmailNotValidError 
 from flask_jwt_extended import jwt_required, get_jwt_identity, verify_jwt_in_request
+from werkzeug.security import generate_password_hash, check_password_hash
+
 
 # Init app
 app = Flask(__name__)
