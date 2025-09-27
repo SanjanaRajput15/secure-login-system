@@ -227,6 +227,13 @@ def health():
         return jsonify({"status": "ok"})
     except Exception as e:
         return jsonify({"status": "error", "detail": str(e)}), 500
+    
+
+@app.route('/dashboard')
+def dashboard():
+    return "Welcome to your dashboard!"  # or render_template('dashboard.html')
+
+
 
 if __name__ == "__main__":
     # In production, use a proper server like gunicorn
