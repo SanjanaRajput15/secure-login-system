@@ -7,6 +7,13 @@
   {% if recaptcha_site_key %}
   <script src="https://www.google.com/recaptcha/api.js" async defer></script>
   {% endif %}
+  <style>
+    .flashes { list-style: none; padding: 0; }
+    .flashes li { padding: 10px; margin-bottom: 10px; border-radius: 5px; }
+    .success { background-color: #d4edda; color: #155724; }
+    .error, .danger { background-color: #f8d7da; color: #721c24; }
+    input, button, select { padding: 8px; margin: 5px 0; width: 100%; }
+  </style>
 </head>
 <body>
   <div class="container">
@@ -20,24 +27,31 @@
         </ul>
       {% endif %}
     {% endwith %}
-    <form method="POST" onsubmit="return validateForm()">
+    
+    <form method="POST" action="{{ url_for('register') }}" onsubmit="return validateForm()" autocomplete="on">
       <label>Username</label>
-      <input name="username" required minlength="2">
+      <input name="username" required minlength="2" autocomplete="username">
+      
       <label>Email</label>
-      <input name="email" type="email" required>
+      <input name="email" type="email" required autocomplete="email">
+      
       <label>Password</label>
-      <input name="password" type="password" required>
+      <input name="password" type="password" required autocomplete="new-password">
+      
       <label>Role</label>
       <select name="role">
         <option>User</option>
         <option>Admin</option>
       </select>
+      
       {% if recaptcha_site_key %}
       <div class="g-recaptcha" data-sitekey="{{ recaptcha_site_key }}"></div>
       {% endif %}
+      
       <button type="submit">Register</button>
     </form>
-    <p><a href="{{ url_for('login') }}">Already registered? Login</a></p>
+    
+    <p>Already have an account? <a href="{{ url_for('login') }}">Login</a></p>
   </div>
 
 <script>
@@ -45,7 +59,7 @@ function validateForm() {
   const pw = document.querySelector('input[name="password"]').value;
   const strong = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
   if (!strong.test(pw)) {
-    alert("Password must be at least 8 chars and include letters, numbers and special characters.");
+    alert("Password must be at least 8 chars and include letters, numbers, and special characters.");
     return false;
   }
   return true;
