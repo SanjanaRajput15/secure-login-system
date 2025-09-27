@@ -128,26 +128,26 @@ def register():
     flash("Registered successfully. Please login.", "success")
     return redirect(url_for("login"))
 
-@app.route('/login', methods=['POST'])
+@app.route('/login', methods=['GET', 'POST'])
 def login():
-    email = request.json.get("email")
-    password = request.json.get("password")
+    if request.method == 'GET':
+        # Show the login page
+        return render_template('login.html')
 
-    user = User.objects(email=email).first()
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
 
-    if not user or not user.check_password(password):
-        return jsonify({"msg": "Invalid credentials"}), 401
+        # validate user from DB (example)
+        user = mongo.db.users.find_one({"email": email})
+        if user and check_password_hash(user['password'], password):
+            # login success
+            flash("Login successful!", "success")
+            return redirect(url_for('dashboard'))  # or wherever
+        else:
+            flash("Invalid email or password", "danger")
+            return redirect(url_for('login'))
 
-    # Create JWT token
-    access_token = create_access_token(identity={"id": str(user.id), "email": user.email, "role": user.role})
-
-    # Return both token and ready-to-use URL
-    return jsonify({
-        "msg": "Login successful",
-        "token": access_token,
-        "user_url_jwt": f"http://127.0.0.1:5000/user?jwt={access_token}",
-        "user_url_token": f"http://127.0.0.1:5000/user?token={access_token}"
-    }), 200
 
 @app.route("/admin")
 @jwt_required(locations=["query_string"])
