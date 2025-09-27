@@ -231,7 +231,12 @@ def health():
 
 @app.route('/dashboard')
 def dashboard():
-    return "Welcome to your dashboard!"  # or render_template('dashboard.html')
+    user = get_jwt_identity()  # if using JWT
+    if not user:
+        flash("Please login first.", "error")
+        return redirect(url_for('login'))
+    
+    return render_template('dashboard.html', username=user.get('username'))
 
 
 
